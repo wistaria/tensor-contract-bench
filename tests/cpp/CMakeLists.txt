@@ -8,3 +8,9 @@ target_link_libraries(tcb_case_loader_test PRIVATE tcb_core)
 
 add_test(NAME tcb_case_loader_test COMMAND tcb_case_loader_test)
 set_tests_properties(tcb_case_loader_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+add_executable(tcb_result_writer_test result_writer_test.cpp)
+target_link_libraries(tcb_result_writer_test PRIVATE tcb_core)
+
+add_test(NAME tcb_result_writer_test COMMAND tcb_result_writer_test)
+set_tests_properties(tcb_result_writer_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
