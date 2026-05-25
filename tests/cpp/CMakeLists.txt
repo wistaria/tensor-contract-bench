@@ -1,0 +1,4 @@
+add_executable(tcb_core_types_test core_types_test.cpp)
+target_link_libraries(tcb_core_types_test PRIVATE tcb_core)
+
+add_test(NAME tcb_core_types_test COMMAND tcb_core_types_test)
