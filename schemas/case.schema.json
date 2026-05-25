@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tensor-contract-bench.local/schemas/case.schema.json",
+  "title": "Tensor Contract Benchmark Case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "dtype",
+    "einsum",
+    "inputs",
+    "output",
+    "parameters",
+    "variants",
+    "validation"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dtype": {
+      "$ref": "#/$defs/dtype"
+    },
+    "einsum": {
+      "type": "string",
+      "pattern": "^[A-Za-z]+(,[A-Za-z]+)+->[A-Za-z]+$"
+    },
+    "inputs": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/input_tensor"
+      }
+    },
+    "output": {
+      "$ref": "#/$defs/output_tensor"
+    },
+    "parameters": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/parameter_name"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "variants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_permutations",
+        "input_permutations",
+        "contraction_permutations"
+      ],
+      "properties": {
+        "output_permutations": {
+          "$ref": "#/$defs/label_permutation_policy"
+        },
+        "input_permutations": {
+          "$ref": "#/$defs/label_permutation_policy"
+        },
+        "contraction_permutations": {
+          "$ref": "#/$defs/contraction_permutation_policy"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_backend",
+        "tolerance"
+      ],
+      "properties": {
+        "reference_backend": {
+          "type": "string",
+          "enum": [
+            "numpy",
+            "cpp:reference"
+          ]
+        },
+        "tolerance": {
+          "$ref": "#/$defs/tolerance"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "dtype": {
+      "type": "string",
+      "enum": [
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "parameter_name": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9_]*$"
+    },
+    "labels": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/label"
+      }
+    },
+    "dimension": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/parameter_name"
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ]
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "physical_order"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "row_major",
+            "column_major",
+            "strided"
+          ]
+        },
+        "physical_order": {
+          "$ref": "#/$defs/labels"
+        },
+        "strides": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "input_tensor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "labels",
+        "dims",
+        "layout"
+      ],
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/labels"
+        },
+        "dims": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/label"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/dimension"
+          }
+        },
+        "layout": {
+          "$ref": "#/$defs/layout"
+        }
+      }
+    },
+    "output_tensor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "labels",
+        "layout"
+      ],
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/labels"
+        },
+        "layout": {
+          "$ref": "#/$defs/layout"
+        }
+      }
+    },
+    "label_permutation_policy": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "all",
+            "selected",
+            "none"
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/label"
+            }
+          }
+        }
+      ]
+    },
+    "contraction_permutation_policy": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "all",
+            "selected",
+            "none"
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]+(,[A-Za-z]+)+->[A-Za-z]+$"
+          }
+        }
+      ]
+    },
+    "tolerance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rtol",
+        "atol"
+      ],
+      "properties": {
+        "rtol": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "atol": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    }
+  }
+}

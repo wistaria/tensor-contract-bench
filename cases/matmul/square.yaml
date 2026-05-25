@@ -1,0 +1,41 @@
+name: matmul_square
+description: Square matrix multiplication contractions with selected index orders.
+dtype: float64
+einsum: ik,kj->ij
+inputs:
+  A:
+    labels: [i, k]
+    dims:
+      i: N
+      k: N
+    layout:
+      kind: row_major
+      physical_order: [i, k]
+  B:
+    labels: [k, j]
+    dims:
+      k: N
+      j: N
+    layout:
+      kind: row_major
+      physical_order: [k, j]
+output:
+  labels: [i, j]
+  layout:
+    kind: row_major
+    physical_order: [i, j]
+parameters:
+  N: [16, 32, 64, 128, 256, 512, 1024]
+variants:
+  output_permutations: selected
+  input_permutations: selected
+  contraction_permutations:
+    - ik,kj->ij
+    - ik,jk->ij
+    - ki,kj->ij
+    - ki,jk->ij
+validation:
+  reference_backend: numpy
+  tolerance:
+    rtol: 1.0e-10
+    atol: 1.0e-12

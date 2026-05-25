@@ -1,0 +1,43 @@
+name: rank3_one_bond
+description: Rank-3 x rank-3 tensor contractions with one contracted leg.
+dtype: float64
+einsum: ija,akl->ijkl
+inputs:
+  A:
+    labels: [i, j, a]
+    dims:
+      i: D
+      j: D
+      a: X
+    layout:
+      kind: row_major
+      physical_order: [i, j, a]
+  B:
+    labels: [a, k, l]
+    dims:
+      a: X
+      k: D
+      l: D
+    layout:
+      kind: row_major
+      physical_order: [a, k, l]
+output:
+  labels: [i, j, k, l]
+  layout:
+    kind: row_major
+    physical_order: [i, j, k, l]
+parameters:
+  D: [4, 8, 16, 32]
+  X: [4, 8, 16, 32, 64]
+variants:
+  output_permutations: all
+  input_permutations: selected
+  contraction_permutations:
+    - ija,akl->ijkl
+    - iaj,kla->ijkl
+    - aij,kla->ijkl
+validation:
+  reference_backend: numpy
+  tolerance:
+    rtol: 1.0e-10
+    atol: 1.0e-12

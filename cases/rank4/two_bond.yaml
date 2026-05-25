@@ -1,0 +1,45 @@
+name: rank4_two_bond
+description: Rank-4 x rank-4 tensor contractions with two contracted legs.
+dtype: float64
+einsum: ijab,abkl->ijkl
+inputs:
+  A:
+    labels: [i, j, a, b]
+    dims:
+      i: D
+      j: D
+      a: X
+      b: X
+    layout:
+      kind: row_major
+      physical_order: [i, j, a, b]
+  B:
+    labels: [a, b, k, l]
+    dims:
+      a: X
+      b: X
+      k: D
+      l: D
+    layout:
+      kind: row_major
+      physical_order: [a, b, k, l]
+output:
+  labels: [i, j, k, l]
+  layout:
+    kind: row_major
+    physical_order: [i, j, k, l]
+parameters:
+  D: [4, 8, 16, 32]
+  X: [4, 8, 16, 32, 64, 128]
+variants:
+  output_permutations: all
+  input_permutations: selected
+  contraction_permutations:
+    - ijab,abkl->ijkl
+    - iabj,kabl->ijkl
+    - abij,klab->ijkl
+validation:
+  reference_backend: numpy
+  tolerance:
+    rtol: 1.0e-10
+    atol: 1.0e-12

@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tensor-contract-bench.local/schemas/result.schema.json",
+  "title": "Tensor Contract Benchmark Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_name",
+    "einsum",
+    "backend",
+    "language",
+    "device",
+    "dtype",
+    "parameters",
+    "input_layouts",
+    "output_layout",
+    "timing",
+    "performance",
+    "validation",
+    "system"
+  ],
+  "properties": {
+    "case_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "einsum": {
+      "type": "string",
+      "pattern": "^[A-Za-z]+(,[A-Za-z]+)+->[A-Za-z]+$"
+    },
+    "backend": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "cpp",
+        "python",
+        "julia",
+        "rust"
+      ]
+    },
+    "device": {
+      "type": "string",
+      "enum": [
+        "cpu",
+        "gpu"
+      ]
+    },
+    "dtype": {
+      "$ref": "#/$defs/dtype"
+    },
+    "parameters": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "input_layouts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/concrete_layout"
+      }
+    },
+    "output_layout": {
+      "$ref": "#/$defs/concrete_layout"
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "warmup",
+        "repeat",
+        "times_sec",
+        "min_sec",
+        "median_sec",
+        "mean_sec",
+        "stddev_sec"
+      ],
+      "properties": {
+        "warmup": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repeat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "times_sec": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "number",
+            "minimum": 0.0
+          }
+        },
+        "min_sec": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "median_sec": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "mean_sec": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "stddev_sec": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flops",
+        "gflops"
+      ],
+      "properties": {
+        "flops": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gflops": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "bytes_estimated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bandwidth_gbs_estimated": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "failed",
+            "skipped"
+          ]
+        },
+        "max_abs_error": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.0
+        },
+        "max_rel_error": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.0
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "cpu",
+        "gpu",
+        "num_threads"
+      ],
+      "properties": {
+        "cpu": {
+          "type": "string"
+        },
+        "gpu": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "num_threads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "compiler": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "compiler_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "library_version": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "dtype": {
+      "type": "string",
+      "enum": [
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "labels": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/label"
+      }
+    },
+    "concrete_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "labels",
+        "physical_order",
+        "strides"
+      ],
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/labels"
+        },
+        "physical_order": {
+          "$ref": "#/$defs/labels"
+        },
+        "strides": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}
