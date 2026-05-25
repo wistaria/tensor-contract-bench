@@ -12,7 +12,7 @@ namespace {
 
 void test_reference_matmul_square_writes_valid_result() {
   const auto benchmark_case = tcb::load_benchmark_case("cases/matmul/square.yaml");
-  const auto result = tcb::run_reference_matmul_square(benchmark_case, 16, 1, 3);
+  const auto result = tcb::run_reference_matmul_square(benchmark_case, "ik,kj->ij", 16, 1, 3);
 
   assert(result.case_name == "matmul_square");
   assert(result.backend == "cpp:reference");
@@ -46,7 +46,7 @@ void test_rejects_non_matmul_case() {
   const auto benchmark_case = tcb::load_benchmark_case("cases/rank3/one_bond.yaml");
   bool rejected = false;
   try {
-    (void)tcb::run_reference_matmul_square(benchmark_case, 4, 0, 1);
+    (void)tcb::run_reference_matmul_square(benchmark_case, "ik,kj->ij", 4, 0, 1);
   } catch (const tcb::ReferenceMatmulError &) {
     rejected = true;
   }

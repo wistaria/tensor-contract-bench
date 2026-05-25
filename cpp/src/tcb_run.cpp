@@ -13,6 +13,7 @@ namespace {
 struct Options {
   std::filesystem::path case_path;
   std::string backend;
+  std::string einsum;
   std::optional<tcb::Index> n;
   std::optional<int> warmup;
   std::optional<int> repeat;
@@ -21,7 +22,7 @@ struct Options {
 
 void print_usage(std::ostream &out) {
   out << "Usage: tcb-run --case PATH --backend cpp:reference --N VALUE "
-         "--warmup VALUE --repeat VALUE --output PATH\n";
+         "--einsum EXPR --warmup VALUE --repeat VALUE --output PATH\n";
 }
 
 bool parse_int64(const std::string &text, tcb::Index &value) {
@@ -68,6 +69,8 @@ bool parse_options(int argc, char **argv, Options &options, std::ostream &err) {
       options.case_path = value;
     } else if (arg == "--backend") {
       options.backend = value;
+    } else if (arg == "--einsum") {
+      options.einsum = value;
     } else if (arg == "--N") {
       tcb::Index n = 0;
       if (!parse_int64(value, n)) {
@@ -109,6 +112,10 @@ bool parse_options(int argc, char **argv, Options &options, std::ostream &err) {
     err << "missing required --N\n";
     return false;
   }
+  if (options.einsum.empty()) {
+    err << "missing required --einsum\n";
+    return false;
+  }
   if (!options.warmup.has_value()) {
     err << "missing required --warmup\n";
     return false;
@@ -140,7 +147,7 @@ int main(int argc, char **argv) {
   try {
     const auto benchmark_case = tcb::load_benchmark_case(options.case_path);
     const auto result =
-        tcb::run_reference_matmul_square(benchmark_case, *options.n, *options.warmup, *options.repeat);
+        tcb::run_reference_matmul_square(benchmark_case, options.einsum, *options.n, *options.warmup, *options.repeat);
     tcb::write_result_jsonl(options.output_path, {result});
   } catch (const std::exception &error) {
     std::cerr << "tcb-run: " << error.what() << '\n';

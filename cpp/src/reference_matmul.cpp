@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <numeric>
+#include <string>
 
 #include "tcb/dense_tensor.hpp"
 
@@ -26,16 +27,61 @@ double expected_c(Index i, Index j, Index n) {
   return sum;
 }
 
+std::vector<std::string> input_terms(const std::string &einsum) {
+  const auto arrow = einsum.find("->");
+  const auto comma = einsum.find(',');
+  if (arrow == std::string::npos || comma == std::string::npos || comma > arrow) {
+    throw ReferenceMatmulError("unsupported matmul einsum: " + einsum);
+  }
+  return {einsum.substr(0, comma), einsum.substr(comma + 1, arrow - comma - 1)};
+}
+
+bool case_contains_variant(const BenchmarkCase &benchmark_case, const std::string &einsum) {
+  if (benchmark_case.variants.contraction_permutations.mode != PermutationMode::Selected) {
+    return benchmark_case.einsum == einsum;
+  }
+  const auto &variants = benchmark_case.variants.contraction_permutations.selected_einsums;
+  return std::find(variants.begin(), variants.end(), einsum) != variants.end();
+}
+
+Index axis_for_label(const Labels &labels, const std::string &label) {
+  const auto found = std::find(labels.begin(), labels.end(), label);
+  if (found == labels.end()) {
+    throw ReferenceMatmulError("missing label in matmul input: " + label);
+  }
+  return static_cast<Index>(std::distance(labels.begin(), found));
+}
+
+double get_matrix_value(const DenseTensor<double> &matrix, const std::string &row_label, Index row_index,
+                        const std::string &column_label, Index column_index) {
+  const Index row_axis = axis_for_label(matrix.labels, row_label);
+  const Index column_axis = axis_for_label(matrix.labels, column_label);
+  Index indices[2] = {0, 0};
+  indices[row_axis] = row_index;
+  indices[column_axis] = column_index;
+  return matrix(indices[0], indices[1]);
+}
+
+void set_matrix_value(DenseTensor<double> &matrix, const std::string &row_label, Index row_index,
+                      const std::string &column_label, Index column_index, double value) {
+  const Index row_axis = axis_for_label(matrix.labels, row_label);
+  const Index column_axis = axis_for_label(matrix.labels, column_label);
+  Index indices[2] = {0, 0};
+  indices[row_axis] = row_index;
+  indices[column_axis] = column_index;
+  matrix(indices[0], indices[1]) = value;
+}
+
 void fill_inputs(DenseTensor<double> &a, DenseTensor<double> &b) {
   const Index n = a.shape.at(0);
   for (Index i = 0; i < n; ++i) {
     for (Index k = 0; k < n; ++k) {
-      a(i, k) = deterministic_a(i, k);
+      set_matrix_value(a, "i", i, "k", k, deterministic_a(i, k));
     }
   }
   for (Index k = 0; k < n; ++k) {
     for (Index j = 0; j < n; ++j) {
-      b(k, j) = deterministic_b(k, j);
+      set_matrix_value(b, "k", k, "j", j, deterministic_b(k, j));
     }
   }
 }
@@ -46,22 +92,26 @@ void naive_matmul(const DenseTensor<double> &a, const DenseTensor<double> &b, De
     for (Index j = 0; j < n; ++j) {
       double sum = 0.0;
       for (Index k = 0; k < n; ++k) {
-        sum += a(i, k) * b(k, j);
+        sum += get_matrix_value(a, "i", i, "k", k) * get_matrix_value(b, "k", k, "j", j);
       }
       c(i, j) = sum;
     }
   }
 }
 
-void require_supported_case(const BenchmarkCase &benchmark_case, Index n, int warmup, int repeat) {
+void require_supported_case(const BenchmarkCase &benchmark_case, const std::string &einsum, Index n, int warmup,
+                            int repeat) {
   if (benchmark_case.name != "matmul_square") {
     throw ReferenceMatmulError("reference matmul supports only matmul_square");
   }
   if (benchmark_case.dtype != DType::Float64) {
     throw ReferenceMatmulError("reference matmul supports only float64");
   }
-  if (benchmark_case.einsum != "ik,kj->ij") {
-    throw ReferenceMatmulError("reference matmul supports only ik,kj->ij");
+  if (!case_contains_variant(benchmark_case, einsum)) {
+    throw ReferenceMatmulError("einsum is not listed in the benchmark case variants: " + einsum);
+  }
+  if (einsum != "ik,kj->ij" && einsum != "ik,jk->ij" && einsum != "ki,kj->ij" && einsum != "ki,jk->ij") {
+    throw ReferenceMatmulError("reference matmul supports only matmul_square contraction variants");
   }
   if (n <= 0) {
     throw ReferenceMatmulError("matrix size N must be positive");
@@ -115,11 +165,13 @@ std::int64_t matmul_bytes(Index n) {
 
 } // namespace
 
-BenchmarkResult run_reference_matmul_square(const BenchmarkCase &benchmark_case, Index n, int warmup, int repeat) {
-  require_supported_case(benchmark_case, n, warmup, repeat);
+BenchmarkResult run_reference_matmul_square(const BenchmarkCase &benchmark_case, const std::string &einsum, Index n,
+                                            int warmup, int repeat) {
+  require_supported_case(benchmark_case, einsum, n, warmup, repeat);
 
-  auto a = make_row_major_matrix({"i", "k"}, n, n);
-  auto b = make_row_major_matrix({"k", "j"}, n, n);
+  const auto terms = input_terms(einsum);
+  auto a = make_row_major_matrix({terms.at(0).substr(0, 1), terms.at(0).substr(1, 1)}, n, n);
+  auto b = make_row_major_matrix({terms.at(1).substr(0, 1), terms.at(1).substr(1, 1)}, n, n);
   auto c = make_row_major_matrix({"i", "j"}, n, n);
   fill_inputs(a, b);
 
@@ -153,15 +205,15 @@ BenchmarkResult run_reference_matmul_square(const BenchmarkCase &benchmark_case,
 
   BenchmarkResult result;
   result.case_name = benchmark_case.name;
-  result.einsum = benchmark_case.einsum;
+  result.einsum = einsum;
   result.backend = "cpp:reference";
   result.language = Language::Cpp;
   result.device = Device::Cpu;
   result.dtype = DType::Float64;
   result.parameters = {{"N", n}};
   result.input_layouts = {
-      {"A", concrete_layout({"i", "k"}, {n, 1})},
-      {"B", concrete_layout({"k", "j"}, {n, 1})},
+      {"A", concrete_layout(a.labels, {n, 1})},
+      {"B", concrete_layout(b.labels, {n, 1})},
   };
   result.output_layout = concrete_layout({"i", "j"}, {n, 1});
   result.timing = {warmup, repeat, times_sec, min_time, median(times_sec), average, stddev(times_sec, average)};

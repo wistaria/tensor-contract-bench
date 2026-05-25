@@ -13,6 +13,7 @@ public:
   explicit ReferenceMatmulError(const std::string &message) : std::runtime_error(message) {}
 };
 
-BenchmarkResult run_reference_matmul_square(const BenchmarkCase &benchmark_case, Index n, int warmup, int repeat);
+BenchmarkResult run_reference_matmul_square(const BenchmarkCase &benchmark_case, const std::string &einsum, Index n,
+                                            int warmup, int repeat);
 
 } // namespace tcb

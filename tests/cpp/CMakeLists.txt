@@ -22,6 +22,7 @@ add_test(NAME tcb_reference_matmul_test COMMAND tcb_reference_matmul_test)
 set_tests_properties(tcb_reference_matmul_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
 add_executable(tcb_run_test tcb_run_test.cpp)
+target_compile_features(tcb_run_test PRIVATE cxx_std_17)
 
 add_test(NAME tcb_run_test COMMAND tcb_run_test $<TARGET_FILE:tcb-run>)
 set_tests_properties(tcb_run_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
