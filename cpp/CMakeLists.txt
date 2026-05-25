@@ -55,3 +55,9 @@ else()
 endif()
 
 target_link_libraries(tcb_core PRIVATE nlohmann_json::nlohmann_json)
+
+add_executable(tcb-run
+  src/tcb_run.cpp
+)
+
+target_link_libraries(tcb-run PRIVATE tcb_core)
