@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Show tool versions
+        run: |
+          cmake --version
+          c++ --version
+          python --version
+          python3 --version
+
+      - name: Run Python schema tests
+        run: python -m unittest discover -s tests
+
+      - name: Validate example cases
+        run: |
+          python tools/validate_schemas.py --kind case \
+            cases/matmul/square.yaml \
+            cases/rank3/one_bond.yaml \
+            cases/rank4/two_bond.yaml
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build C++
+        run: cmake --build build --parallel
+
+      - name: Run C++ tests
+        run: ctest --test-dir build --output-on-failure
