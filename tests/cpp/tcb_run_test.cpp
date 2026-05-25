@@ -183,12 +183,13 @@ void test_tcb_run_full_sweep_on_small_case(const char *binary_path) {
   std::filesystem::remove(output_path);
 }
 
-#ifndef TCB_HAVE_BLAS
-void test_tcb_run_rejects_unsupported_backend(const char *binary_path) {
+#if !defined(TCB_HAVE_BLAS) || !defined(TCB_HAVE_TBLIS)
+void test_tcb_run_rejects_unavailable_backend(const char *binary_path, const std::string &backend) {
   const auto output_path = std::filesystem::temp_directory_path() / "tcb_run_invalid_backend.jsonl";
   const std::string command = quote(binary_path) +
                               " --case cases/matmul/square.yaml"
-                              " --backend cpp:blas"
+                              " --backend " +
+                              backend +
                               " --einsum 'ik,kj->ij'"
                               " --N 16"
                               " --warmup 0"
@@ -209,7 +210,10 @@ int main(int argc, char **argv) {
   test_tcb_run_all_n_for_one_einsum(argv[1]);
   test_tcb_run_full_sweep_on_small_case(argv[1]);
 #ifndef TCB_HAVE_BLAS
-  test_tcb_run_rejects_unsupported_backend(argv[1]);
+  test_tcb_run_rejects_unavailable_backend(argv[1], "cpp:blas");
+#endif
+#ifndef TCB_HAVE_TBLIS
+  test_tcb_run_rejects_unavailable_backend(argv[1], "cpp:tblis");
 #endif
   return 0;
 }

@@ -11,6 +11,9 @@
 #ifdef TCB_HAVE_BLAS
 #include "tcb/blas_matmul.hpp"
 #endif
+#ifdef TCB_HAVE_TBLIS
+#include "tcb/tblis_matmul.hpp"
+#endif
 
 namespace {
 
@@ -153,8 +156,15 @@ bool parse_options(int argc, char **argv, Options &options, std::ostream &err) {
     return true;
   }
 #endif
+#ifdef TCB_HAVE_TBLIS
+  if (options.backend == "cpp:tblis") {
+    return true;
+  }
+#endif
   if (options.backend == "cpp:blas") {
     err << "backend cpp:blas is not available in this build\n";
+  } else if (options.backend == "cpp:tblis") {
+    err << "backend cpp:tblis is not available in this build\n";
   } else {
     err << "unsupported backend: " << options.backend << '\n';
   }
@@ -206,6 +216,10 @@ int main(int argc, char **argv) {
 #ifdef TCB_HAVE_BLAS
         } else if (options.backend == "cpp:blas") {
           results.push_back(tcb::run_blas_matmul_square(benchmark_case, einsum, n, *options.warmup, *options.repeat));
+#endif
+#ifdef TCB_HAVE_TBLIS
+        } else if (options.backend == "cpp:tblis") {
+          results.push_back(tcb::run_tblis_matmul_square(benchmark_case, einsum, n, *options.warmup, *options.repeat));
 #endif
         }
       }

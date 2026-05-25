@@ -51,6 +51,19 @@ if(TCB_ENABLE_BLAS)
 endif()
 set(TCB_HAVE_BLAS ${TCB_HAVE_BLAS} PARENT_SCOPE)
 
+set(TCB_HAVE_TBLIS OFF)
+if(TCB_ENABLE_TBLIS)
+  find_path(TCB_TBLIS_INCLUDE_DIR NAMES tblis.h tblis/tblis.h)
+  find_library(TCB_TBLIS_LIBRARY NAMES tblis)
+  if(TCB_TBLIS_INCLUDE_DIR AND TCB_TBLIS_LIBRARY)
+    list(APPEND TCB_CORE_SOURCES src/tblis_matmul.cpp)
+    set(TCB_HAVE_TBLIS ON)
+  else()
+    message(STATUS "TBLIS not found; cpp:tblis backend will be unavailable")
+  endif()
+endif()
+set(TCB_HAVE_TBLIS ${TCB_HAVE_TBLIS} PARENT_SCOPE)
+
 add_library(tcb_core
   ${TCB_CORE_SOURCES}
 )
@@ -79,6 +92,12 @@ if(TCB_HAVE_BLAS)
   else()
     target_link_libraries(tcb_core PRIVATE ${BLAS_LIBRARIES})
   endif()
+endif()
+
+if(TCB_HAVE_TBLIS)
+  target_compile_definitions(tcb_core PUBLIC TCB_HAVE_TBLIS=1)
+  target_include_directories(tcb_core PRIVATE ${TCB_TBLIS_INCLUDE_DIR})
+  target_link_libraries(tcb_core PRIVATE ${TCB_TBLIS_LIBRARY})
 endif()
 
 add_executable(tcb-run
