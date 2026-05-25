@@ -33,10 +33,26 @@ else()
   FetchContent_MakeAvailable(nlohmann_json)
 endif()
 
-add_library(tcb_core
+set(TCB_CORE_SOURCES
   src/case_loader.cpp
   src/reference_matmul.cpp
   src/result_writer.cpp
+)
+
+set(TCB_HAVE_BLAS OFF)
+if(TCB_ENABLE_BLAS)
+  find_package(BLAS QUIET)
+  if(BLAS_FOUND)
+    list(APPEND TCB_CORE_SOURCES src/blas_matmul.cpp)
+    set(TCB_HAVE_BLAS ON)
+  else()
+    message(STATUS "BLAS not found; cpp:blas backend and tests will be skipped")
+  endif()
+endif()
+set(TCB_HAVE_BLAS ${TCB_HAVE_BLAS} PARENT_SCOPE)
+
+add_library(tcb_core
+  ${TCB_CORE_SOURCES}
 )
 
 target_include_directories(
@@ -55,6 +71,15 @@ else()
 endif()
 
 target_link_libraries(tcb_core PRIVATE nlohmann_json::nlohmann_json)
+
+if(TCB_HAVE_BLAS)
+  target_compile_definitions(tcb_core PUBLIC TCB_HAVE_BLAS=1)
+  if(TARGET BLAS::BLAS)
+    target_link_libraries(tcb_core PRIVATE BLAS::BLAS)
+  else()
+    target_link_libraries(tcb_core PRIVATE ${BLAS_LIBRARIES})
+  endif()
+endif()
 
 add_executable(tcb-run
   src/tcb_run.cpp

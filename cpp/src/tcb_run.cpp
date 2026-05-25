@@ -8,6 +8,9 @@
 #include "tcb/case_loader.hpp"
 #include "tcb/reference_matmul.hpp"
 #include "tcb/result_writer.hpp"
+#ifdef TCB_HAVE_BLAS
+#include "tcb/blas_matmul.hpp"
+#endif
 
 namespace {
 
@@ -125,7 +128,8 @@ bool parse_options(int argc, char **argv, Options &options, std::ostream &err) {
     err << "specify exactly one of --N or --all-N\n";
     return false;
   }
-  if (options.einsum.empty() == options.all_einsums) {
+  const bool has_einsum = !options.einsum.empty();
+  if (has_einsum == options.all_einsums) {
     err << "specify exactly one of --einsum or --all-einsums\n";
     return false;
   }
@@ -141,11 +145,20 @@ bool parse_options(int argc, char **argv, Options &options, std::ostream &err) {
     err << "missing required --output\n";
     return false;
   }
-  if (options.backend != "cpp:reference") {
-    err << "unsupported backend: " << options.backend << '\n';
-    return false;
+  if (options.backend == "cpp:reference") {
+    return true;
   }
-  return true;
+#ifdef TCB_HAVE_BLAS
+  if (options.backend == "cpp:blas") {
+    return true;
+  }
+#endif
+  if (options.backend == "cpp:blas") {
+    err << "backend cpp:blas is not available in this build\n";
+  } else {
+    err << "unsupported backend: " << options.backend << '\n';
+  }
+  return false;
 }
 
 std::vector<tcb::Index> selected_n_values(const tcb::BenchmarkCase &benchmark_case, const Options &options) {
@@ -187,7 +200,14 @@ int main(int argc, char **argv) {
     results.reserve(n_values.size() * einsums.size());
     for (const auto n : n_values) {
       for (const auto &einsum : einsums) {
-        results.push_back(tcb::run_reference_matmul_square(benchmark_case, einsum, n, *options.warmup, *options.repeat));
+        if (options.backend == "cpp:reference") {
+          results.push_back(
+              tcb::run_reference_matmul_square(benchmark_case, einsum, n, *options.warmup, *options.repeat));
+#ifdef TCB_HAVE_BLAS
+        } else if (options.backend == "cpp:blas") {
+          results.push_back(tcb::run_blas_matmul_square(benchmark_case, einsum, n, *options.warmup, *options.repeat));
+#endif
+        }
       }
     }
     tcb::write_result_jsonl(options.output_path, results);

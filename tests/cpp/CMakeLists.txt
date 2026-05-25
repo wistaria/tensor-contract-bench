@@ -23,6 +23,25 @@ set_tests_properties(tcb_reference_matmul_test PROPERTIES WORKING_DIRECTORY "${P
 
 add_executable(tcb_run_test tcb_run_test.cpp)
 target_compile_features(tcb_run_test PRIVATE cxx_std_17)
+if(TCB_HAVE_BLAS)
+  target_compile_definitions(tcb_run_test PRIVATE TCB_HAVE_BLAS=1)
+endif()
 
 add_test(NAME tcb_run_test COMMAND tcb_run_test $<TARGET_FILE:tcb-run>)
 set_tests_properties(tcb_run_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+if(TCB_HAVE_BLAS)
+  add_executable(tcb_blas_matmul_test blas_matmul_test.cpp)
+  target_link_libraries(tcb_blas_matmul_test PRIVATE tcb_core)
+
+  add_test(NAME tcb_blas_matmul_test COMMAND tcb_blas_matmul_test)
+  set_tests_properties(tcb_blas_matmul_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+  add_executable(tcb_run_blas_test tcb_run_blas_test.cpp)
+  target_compile_features(tcb_run_blas_test PRIVATE cxx_std_17)
+
+  add_test(NAME tcb_run_blas_test COMMAND tcb_run_blas_test $<TARGET_FILE:tcb-run>)
+  set_tests_properties(tcb_run_blas_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+else()
+  message(STATUS "Skipping BLAS CTests because BLAS was not found")
+endif()
