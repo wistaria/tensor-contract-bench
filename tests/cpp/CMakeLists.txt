@@ -14,3 +14,9 @@ target_link_libraries(tcb_result_writer_test PRIVATE tcb_core)
 
 add_test(NAME tcb_result_writer_test COMMAND tcb_result_writer_test)
 set_tests_properties(tcb_result_writer_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+add_executable(tcb_reference_matmul_test reference_matmul_test.cpp)
+target_link_libraries(tcb_reference_matmul_test PRIVATE tcb_core)
+
+add_test(NAME tcb_reference_matmul_test COMMAND tcb_reference_matmul_test)
+set_tests_properties(tcb_reference_matmul_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")

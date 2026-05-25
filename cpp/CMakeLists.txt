@@ -35,6 +35,7 @@ endif()
 
 add_library(tcb_core
   src/case_loader.cpp
+  src/reference_matmul.cpp
   src/result_writer.cpp
 )
 
