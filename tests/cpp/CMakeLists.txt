@@ -2,3 +2,9 @@ add_executable(tcb_core_types_test core_types_test.cpp)
 target_link_libraries(tcb_core_types_test PRIVATE tcb_core)
 
 add_test(NAME tcb_core_types_test COMMAND tcb_core_types_test)
+
+add_executable(tcb_case_loader_test case_loader_test.cpp)
+target_link_libraries(tcb_case_loader_test PRIVATE tcb_core)
+
+add_test(NAME tcb_case_loader_test COMMAND tcb_case_loader_test)
+set_tests_properties(tcb_case_loader_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(tensor_contract_bench VERSION 0.1.0 LANGUAGES CXX)
 
 option(TCB_BUILD_TESTS "Build tensor-contract-bench tests" ON)
+option(TCB_USE_SYSTEM_YAML_CPP "Use an installed yaml-cpp package instead of FetchContent" OFF)
 
 add_subdirectory(cpp)
 

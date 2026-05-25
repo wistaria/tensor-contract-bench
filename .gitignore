@@ -1,2 +1,4 @@
 # Build outputs
 /build/
+/CMakeFiles/
+/CMakeCache.txt
